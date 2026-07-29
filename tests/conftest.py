@@ -16,8 +16,19 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def block_network(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """Fail any test that attempts an outbound socket connection."""
+def block_network(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[None]:
+    """Fail any test that attempts an outbound socket connection.
+
+    Tests marked `manual` are exempt: they exist specifically to exercise the
+    real gridstatus network call and are excluded from the default run and CI
+    (see pyproject.toml addopts), so a developer running them explicitly with
+    `-m manual` expects them to actually reach the network.
+    """
+    if request.node.get_closest_marker("manual") is not None:
+        yield
+        return
 
     def guard(*args: Any, **kwargs: Any) -> None:
         raise RuntimeError(
