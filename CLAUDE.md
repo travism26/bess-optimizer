@@ -62,6 +62,15 @@ missing intervals listed; never silently interpolate.
    report it via `simultaneous_hours` and log a WARNING, never raise. The MILP
    exclusivity fix is explicitly deferred; do not add it.
 
+## Agentic workflow (ADW)
+
+This repo is built with ADW, a multi-agent SDLC harness (research, plan,
+build, validate, test, review, document). The project-tailored slash commands
+in `.claude/commands/` are tracked and public. The harness engine (`adws/`)
+and its runtime state (`agents/`, `trees/`, `logs/`) live in a separate
+private repo and are gitignored here; `adw_gates.json` defines the local
+quality gates (ruff, mypy, pytest), mirroring CI.
+
 ## Rules
 
 - Tests must never touch the network. `tests/conftest.py` blocks socket

@@ -1,0 +1,7 @@
+{
+  "gates": [
+    { "name": "lint", "command": "uv run ruff check ." },
+    { "name": "typecheck", "command": "uv run mypy" },
+    { "name": "unit", "command": "uv run pytest -q" }
+  ]
+}

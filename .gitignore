@@ -1,3 +1,15 @@
+# ADW harness: runs from this working tree but lives in its own (private)
+# repo. The tailored .claude/commands/ ARE tracked; the engine and its
+# runtime state are not.
+adws/
+agents/
+trees/
+logs/
+.claude/settings.local.json
+
+# Private planning notes, never committed
+ai_docs/project_context_private.md
+
 # Python
 __pycache__/
 *.py[cod]
