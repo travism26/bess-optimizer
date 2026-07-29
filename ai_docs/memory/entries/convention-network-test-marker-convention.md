@@ -2,7 +2,7 @@
 name: network-test-marker-convention
 description: Live/network tests use pytest.mark.manual, excluded by default via addopts and a marker-aware conftest guard
 type: convention
-source_adw_ids: [3c648beb, 3b9cf1a9]
+source_adw_ids: [3c648beb, 3b9cf1a9, 5dbaba17]
 date: 2026-07-29
 ---
 
