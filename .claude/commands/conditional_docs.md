@@ -38,6 +38,15 @@ This prompt helps you determine what documentation you should read based on the 
     - When troubleshooting gridstatus DAM archive vs. recent-documents behavior
     - When adding a `pytest.mark.manual`-style network-touching test
 
+- app_docs/feature-3b9cf1a9-lp-optimizer.md
+
+  - Conditions:
+    - When working with `src/bess/optimizer/lp.py` or `optimize_dispatch`
+    - When modifying the HiGHS LP formulation, column layout, or SoC recursion
+    - When adding golden or property tests for the optimizer
+    - When troubleshooting simultaneous charge/discharge or non-optimal solver status
+    - When touching the module's import list (purity rule enforcement)
+
 - adws/README.md
 
   - Conditions:
