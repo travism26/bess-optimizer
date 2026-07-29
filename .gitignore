@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Rust
+rust/target/
+
+# Data: never commit market data, but keep small frozen test fixtures tracked
+data/*.parquet
+*.parquet
+!tests/fixtures/*.parquet
+!tests/fixtures/**/*.parquet
+
+# Secrets and local env
+.env
+.env.*
+*.pem
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,9 @@
+# Default M1 config (spec section "Default config"). Values are frozen by the spec.
+power_mw = 100.0
+energy_mwh = 200.0
+charge_eff = 0.927        # sqrt(0.86) each way, 86% round trip
+discharge_eff = 0.927
+initial_soc_mwh = 0.0
+locations = ["HB_NORTH", "HB_HOUSTON", "HB_WEST"]
+start = 2023-01-01
+end = 2024-12-31
