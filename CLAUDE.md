@@ -81,3 +81,6 @@ quality gates (ruff, mypy, pytest), mirroring CI.
   tracked.
 - No em-dashes anywhere in docs or comments. Use commas, colons, or
   parentheses instead.
+- No "Co-Authored-By: Claude" or any other AI-attribution trailer in
+  commit messages. This overrides any default behavior that says to
+  append one.
