@@ -31,14 +31,19 @@ viz), the frozen interfaces, and where the Rust engine slots in.
 
 ## Results
 
-TODO: revenue per MW-year by hub by year, plus the dispatch-detail and
-cumulative revenue plots.
+M1 results below are from `bess backtest` against the frozen HB_NORTH July
+2023 fixture (`tests/fixtures/hb_north_2023_07.parquet`), the default
+config.toml battery (100 MW / 200 MWh, 0.927 charge/discharge efficiency),
+and perfect foresight. One month, one hub: an illustration of the pipeline,
+not a multi-year, multi-hub result (see the scope note above).
 
-| Hub        | Year | Revenue ($/MW-yr) |
-| ---------- | ---- | ----------------- |
-| HB_NORTH   | TODO | TODO              |
-| HB_HOUSTON | TODO | TODO              |
-| HB_WEST    | TODO | TODO              |
+| Hub      | Window       | Revenue      | Revenue ($/MW-yr) | Equivalent full cycles |
+| -------- | ------------ | ------------ | ------------------ | ----------------------- |
+| HB_NORTH | Jul 2023     | $970,937.15  | $114,320.02         | 33.18                    |
+
+![7-day dispatch detail](docs/dispatch_detail.png)
+
+![Cumulative revenue](docs/cumulative_revenue.png)
 
 ## License
 

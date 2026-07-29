@@ -1,8 +1,8 @@
 """Matplotlib plots for the M1 backtest.
 
 The spec requires two plots: a 7-day dispatch detail (price, charge/discharge,
-SoC) and cumulative revenue by hub. Signatures here are not spec-frozen; keep
-them stable anyway so the CLI and tests do not churn.
+SoC on a twin axis) and cumulative revenue by hub. Signatures here are not
+spec-frozen; keep them stable anyway so the CLI and tests do not churn.
 """
 
 from __future__ import annotations
@@ -10,9 +10,19 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")  # headless: CI and tests never have a display
+
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from bess.models import DispatchResult
+
+# Bar width in matplotlib's date units (days) for the charge/discharge bars,
+# tuned for hourly settlement intervals (the only cadence this project uses):
+# slightly under 1/24 of a day so adjacent hourly bars sit close but distinct.
+_BAR_WIDTH_DAYS = 0.8 / 24
 
 
 def plot_dispatch_detail(
@@ -24,15 +34,64 @@ def plot_dispatch_detail(
 ) -> Path:
     """Render the 7-day dispatch detail plot and return the written PNG path.
 
-    Intended behavior: three aligned panels over a window_days window starting
-    at window_start (default: first day of the horizon): price ($/MWh),
-    charge/discharge (MW, signed or paired), and SoC (MWh). Saved as PNG with
-    nonzero content.
-
-    Covered by acceptance criterion 8 (CLI end-to-end produces both PNG plots),
-    tested in tests/test_backtest_integration.py.
+    Two aligned panels over a window_days window starting at window_start
+    (default: the UTC calendar day of the first row): price ($/MWh) on top,
+    and charge/discharge bars (MW) with SoC (MWh) on a twin y-axis below.
+    result's arrays must be positionally aligned with prices_df's rows (as
+    returned by bess.backtest.runner.solve_dispatch for the same prices_df).
     """
-    raise NotImplementedError
+    start_ts = (
+        pd.Timestamp(window_start, tz="UTC")
+        if window_start is not None
+        else pd.Timestamp(prices_df["interval_start_utc"].iloc[0]).floor("D")
+    )
+    end_ts = start_ts + pd.Timedelta(window_days, unit="D")
+    mask = (
+        (prices_df["interval_start_utc"] >= start_ts) & (prices_df["interval_start_utc"] < end_ts)
+    ).to_numpy()
+
+    times = prices_df.loc[mask, "interval_start_utc"]
+    prices = prices_df.loc[mask, "price"]
+    charge_mw = result.charge_mw[mask]
+    discharge_mw = result.discharge_mw[mask]
+    soc_mwh = result.soc_mwh[mask]
+    location = str(prices_df["location"].iloc[0])
+
+    fig, (ax_price, ax_dispatch) = plt.subplots(2, 1, sharex=True, figsize=(12, 7))
+
+    ax_price.plot(times, prices, color="tab:blue")
+    ax_price.axhline(0.0, color="black", linewidth=0.5)
+    ax_price.set_ylabel("Price ($/MWh)")
+    ax_price.set_title(
+        f"{location} dispatch detail: {start_ts.date()} to "
+        f"{(end_ts - pd.Timedelta(1, unit='h')).date()} (UTC)"
+    )
+
+    ax_dispatch.bar(
+        times, discharge_mw, width=_BAR_WIDTH_DAYS, color="tab:green", label="Discharge (MW)"
+    )
+    ax_dispatch.bar(times, -charge_mw, width=_BAR_WIDTH_DAYS, color="tab:red", label="Charge (MW)")
+    ax_dispatch.axhline(0.0, color="black", linewidth=0.5)
+    ax_dispatch.set_ylabel("Dispatch (MW)")
+    ax_dispatch.set_xlabel("Time (UTC)")
+
+    ax_soc = ax_dispatch.twinx()
+    ax_soc.plot(times, soc_mwh, color="tab:purple", label="SoC (MWh)")
+    ax_soc.set_ylabel("State of charge (MWh)")
+
+    dispatch_handles, dispatch_labels = ax_dispatch.get_legend_handles_labels()
+    soc_handles, soc_labels = ax_soc.get_legend_handles_labels()
+    ax_dispatch.legend(
+        dispatch_handles + soc_handles, dispatch_labels + soc_labels, loc="upper right"
+    )
+
+    fig.autofmt_xdate()
+    fig.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=120)
+    plt.close(fig)
+    return output_path
 
 
 def plot_cumulative_revenue(
@@ -41,10 +100,25 @@ def plot_cumulative_revenue(
 ) -> Path:
     """Render cumulative revenue by hub over time and return the written PNG path.
 
-    Intended behavior: one line per hub, cumulative sum of the daily revenue
-    series, labeled legend, saved as PNG with nonzero content.
-
-    Covered by acceptance criterion 8 (CLI end-to-end produces both PNG plots),
-    tested in tests/test_backtest_integration.py.
+    One line per hub: the running cumulative sum of that hub's daily_revenue
+    series (BacktestResult.daily_revenue, UTC-day grouped) over the full
+    backtest window, with a labeled legend. Saved as PNG.
     """
-    raise NotImplementedError
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for hub, daily_revenue in daily_revenue_by_hub.items():
+        cumulative = daily_revenue.sort_index().cumsum()
+        ax.plot(cumulative.index, cumulative.to_numpy(), label=hub)
+
+    ax.axhline(0.0, color="black", linewidth=0.5)
+    ax.set_xlabel("Date (UTC)")
+    ax.set_ylabel("Cumulative revenue ($)")
+    ax.set_title("Cumulative day-ahead arbitrage revenue")
+    ax.legend(loc="upper left")
+    fig.autofmt_xdate()
+    fig.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=120)
+    plt.close(fig)
+    return output_path
