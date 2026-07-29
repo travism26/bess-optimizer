@@ -33,6 +33,10 @@ data/*.parquet
 !tests/fixtures/*.parquet
 !tests/fixtures/**/*.parquet
 
+# CLI-generated backtest output (metrics JSON, PNGs); docs/ images for the
+# README are committed separately and are not affected by this rule.
+/output/
+
 # Secrets and local env
 .env
 .env.*

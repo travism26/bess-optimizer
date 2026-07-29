@@ -2,7 +2,7 @@
 name: adw-worktree-port-file-cleanup
 description: ADW port-allocation file (.ports.env) recurringly gets committed mid-pipeline; check git status and untrack before finalizing
 type: pitfall
-source_adw_ids: [3c648beb, 3b9cf1a9]
+source_adw_ids: [3c648beb, 3b9cf1a9, 27b2b22d]
 date: 2026-07-29
 ---
 
