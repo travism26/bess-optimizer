@@ -8,9 +8,11 @@ via `uv run adws/travis/travis_dream.py --working-dir <this repo>`.
 - network-test-marker-convention — Live/network tests use pytest.mark.manual, excluded by default via addopts and a marker-aware conftest guard
 
 ## Lessons
-- ast-based-import-confinement-guard — Guard tests that confine an import (e.g. gridstatus) to one module should parse the AST, not grep source text
+- ast-based-import-confinement-guard — Guard tests that confine an import (e.g. gridstatus, highspy) to one module should parse the AST, not grep source text
+- lp-optimizer-degeneracy-in-tests — LP dispatch optimum is often non-unique; assert net dispatch/revenue, not raw per-interval vertex values
 
 ## Pitfalls
-- adw-worktree-port-file-cleanup — ADW port-allocation file can get committed mid-pipeline; check git status and untrack before finalizing
+- adw-worktree-port-file-cleanup — ADW port-allocation file (.ports.env) recurringly gets committed mid-pipeline; check git status and untrack before finalizing
 - fetch-da-prices-per-location-redownload — fetch_da_prices redownloads the full yearly ERCOT archive once per location, not shared across locations
 - gridstatus-ercot-dam-api-pitfall — gridstatus Ercot.get_spp() is unreliable for historical DAM data; use get_dam_spp(year) instead
+- highspy-untyped-mypy — highspy has no type stubs; values read from it need explicit casts/annotations to satisfy mypy warn_return_any

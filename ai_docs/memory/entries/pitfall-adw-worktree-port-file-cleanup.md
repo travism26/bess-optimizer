@@ -1,9 +1,9 @@
 ---
 name: adw-worktree-port-file-cleanup
-description: ADW port-allocation file can get committed mid-pipeline; check git status and untrack before finalizing
+description: ADW port-allocation file (.ports.env) recurringly gets committed mid-pipeline; check git status and untrack before finalizing
 type: pitfall
-source_adw_ids: [3c648beb]
+source_adw_ids: [3c648beb, 3b9cf1a9]
 date: 2026-07-29
 ---
 
-During at least one ADW run, the harness's worktree port-allocation file got committed to the feature branch during the research phase, unrelated to the task's actual scope. Other worktrees show a later pipeline step (document/ship) untracking this file before finalizing, but it doesn't always happen. Before treating a branch as done or opening a PR, run `git status`/`git show --stat` on recent commits and untrack any stray port-allocation or other ADW-harness state file that isn't part of the feature's actual diff.
+`.ports.env`, the harness's port-allocation file, has now shown up modified/committed unrelated to the feature diff in at least two separate ADW runs (M1a and M1b), each time flagged in review as a skippable issue rather than fixed. No pipeline phase reliably cleans this up on its own, so it recurs across runs even after being documented. Before treating a branch as done or opening a PR, run `git status`/`git show --stat` on recent commits and explicitly restore or untrack `.ports.env` (or any other stray ADW-harness state file) if it appears in the diff; do not assume a later phase will handle it.

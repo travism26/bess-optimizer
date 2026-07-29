@@ -2,7 +2,7 @@
 name: gridstatus-ercot-dam-api-pitfall
 description: gridstatus Ercot.get_spp() is unreliable for historical DAM data; use get_dam_spp(year) instead
 type: pitfall
-source_adw_ids: [3c648beb]
+source_adw_ids: [3c648beb, 3b9cf1a9]
 date: 2026-07-29
 ---
 
