@@ -29,6 +29,15 @@ This prompt helps you determine what documentation you should read based on the 
     - When working with external integrations
     - IMPORTANT: Required reading before implementing any major feature
 
+- app_docs/feature-3c648beb-data-layer.md
+
+  - Conditions:
+    - When working with `src/bess/data/prices.py` or `fetch_da_prices`
+    - When touching the `bess fetch` CLI command
+    - When adding tests that need DST-transition or raw gridstatus fixtures
+    - When troubleshooting gridstatus DAM archive vs. recent-documents behavior
+    - When adding a `pytest.mark.manual`-style network-touching test
+
 - adws/README.md
 
   - Conditions:
