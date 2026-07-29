@@ -28,26 +28,26 @@ Useful variations:
 
 ## M1: Python core
 
-- [ ] **T1: Data layer** `specs/M1a_data_layer.md`
+- [x] **T1: Data layer** `specs/M1a_data_layer.md`
   - Depends on: nothing (scaffold only).
   - Run: `uv run adws/travis/travis_sdlc.py specs/M1a_data_layer.md --worktree --draft-pr --dream --tui`
   - Note: the frozen fixture (`tests/fixtures/hb_north_2023_07.parquet`) is
     generated once via a real gridstatus fetch. The build agent needs network
     for that single step; tests and CI stay offline.
-  - PR: ______  Merged: ______
+  - PR: #1  Merged: 2026-07-29 (adw 3c648beb)
 
-- [ ] **T2: LP optimizer** `specs/M1b_optimizer.md`
+- [x] **T2: LP optimizer** `specs/M1b_optimizer.md`
   - Depends on: nothing technically (independent of T1), sequenced after T1
     by choice so PRs land one at a time.
   - Run: `uv run adws/travis/travis_sdlc.py specs/M1b_optimizer.md --worktree --draft-pr --dream --tui`
-  - PR: ______  Merged: ______
+  - PR: #2  Merged: 2026-07-29 (adw 3b9cf1a9)
 
-- [ ] **T3: Backtest, CLI, plots** `specs/M1c_backtest_cli.md`
+- [x] **T3: Backtest, CLI, plots** `specs/M1c_backtest_cli.md`
   - Depends on: T1 AND T2 merged to main (integrates both).
   - Run: `uv run adws/travis/travis_sdlc.py specs/M1c_backtest_cli.md --worktree --draft-pr --dream --tui`
   - Note: finishes the M1 definition of done, including the README results
     section with real numbers from the fixture month.
-  - PR: ______  Merged: ______
+  - PR: #4  Merged: 2026-07-29 (adw 27b2b22d; first attempt 5dbaba17 failed, PR #3 closed)
 
 ## M2+ (specs not yet written)
 
@@ -70,3 +70,7 @@ run) before it can enter the queue above.
 
 | Date | Task | adw-id | Result |
 | ---- | ---- | ------ | ------ |
+| 2026-07-29 | T1 M1a | 3c648beb | PR #1 merged |
+| 2026-07-29 | T2 M1b | 3b9cf1a9 | PR #2 merged |
+| 2026-07-29 | T3 M1c | 5dbaba17 | FAILED: silent no-op build; harness fixed (no-op guard, a1d9ac5); PR #3 closed |
+| 2026-07-29 | T3 M1c | 27b2b22d | PR #4 merged; M1 complete |
