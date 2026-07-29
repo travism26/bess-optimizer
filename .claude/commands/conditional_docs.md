@@ -47,6 +47,16 @@ This prompt helps you determine what documentation you should read based on the 
     - When troubleshooting simultaneous charge/discharge or non-optimal solver status
     - When touching the module's import list (purity rule enforcement)
 
+- app_docs/feature-27b2b22d-backtest-cli-plots.md
+
+  - Conditions:
+    - When working with `src/bess/backtest/runner.py` or `run_backtest`
+    - When touching the `bess backtest` or `bess plot` CLI commands
+    - When modifying `src/bess/viz/plots.py` (dispatch detail or cumulative revenue plots)
+    - When changing revenue/cycles metrics math or annualization logic
+    - When troubleshooting metrics JSON determinism or output directory resolution
+    - When adding tests to `tests/test_backtest_integration.py`
+
 - adws/README.md
 
   - Conditions:
