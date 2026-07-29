@@ -1,0 +1,72 @@
+# Task Runbook
+
+The ordered queue of ADW pipeline runs for this project. One task = one spec =
+one pipeline run = one PR. Work top to bottom: kick off the next unchecked
+task, review its PR, merge, tick the box, move on. Do not start a task whose
+dependencies are unmerged.
+
+## How to run a task
+
+From the repo root, with a clean working tree and `gh` authenticated:
+
+```
+uv run adws/travis/travis_sdlc.py specs/<task-spec>.md --worktree --draft-pr --dream --tui
+```
+
+What happens: the spec is used verbatim (planning is skipped for `specs/`
+paths), the run executes in an isolated worktree under `trees/<adw-id>/` on
+branch `adw/<adw-id>`, a draft PR opens with a live phase checklist, and on
+success the PR flips to ready for review. Merging is always manual. `--dream`
+consolidates a successful run into `ai_docs/memory/`, which rides the PR (and
+is public; it only ever contains technical build notes).
+
+Useful variations:
+
+- Resume an interrupted run: add `--resume` with the same adw-id.
+- Best-of-N on a hard task: add `--attempts 3 --test-command "uv run pytest -q"`.
+- Keep noise down on a trivial task: `--skip-document`.
+
+## M1: Python core
+
+- [ ] **T1: Data layer** `specs/M1a_data_layer.md`
+  - Depends on: nothing (scaffold only).
+  - Run: `uv run adws/travis/travis_sdlc.py specs/M1a_data_layer.md --worktree --draft-pr --dream --tui`
+  - Note: the frozen fixture (`tests/fixtures/hb_north_2023_07.parquet`) is
+    generated once via a real gridstatus fetch. The build agent needs network
+    for that single step; tests and CI stay offline.
+  - PR: ______  Merged: ______
+
+- [ ] **T2: LP optimizer** `specs/M1b_optimizer.md`
+  - Depends on: nothing technically (independent of T1), sequenced after T1
+    by choice so PRs land one at a time.
+  - Run: `uv run adws/travis/travis_sdlc.py specs/M1b_optimizer.md --worktree --draft-pr --dream --tui`
+  - PR: ______  Merged: ______
+
+- [ ] **T3: Backtest, CLI, plots** `specs/M1c_backtest_cli.md`
+  - Depends on: T1 AND T2 merged to main (integrates both).
+  - Run: `uv run adws/travis/travis_sdlc.py specs/M1c_backtest_cli.md --worktree --draft-pr --dream --tui`
+  - Note: finishes the M1 definition of done, including the README results
+    section with real numbers from the fixture month.
+  - PR: ______  Merged: ______
+
+## M2+ (specs not yet written)
+
+Placeholders from the master plan; each needs a spec authored (or a planning
+run) before it can enter the queue above.
+
+- [ ] **M2: Rolling horizon + benchmarks.** Imperfect-foresight dispatch mode,
+  TB2/TB4 value benchmarks, capture rate, parameter sweeps.
+- [ ] **M3: TBD** (reserved in the 6-milestone plan).
+- [ ] **M4: Rust engine.** Port `optimize_dispatch` to Rust via PyO3/maturin
+  behind the frozen interface; benchmark vs Python. Prerequisite chore: re-run
+  the ADW command tailoring and extend `adw_gates.json` for cargo
+  build/test/clippy/fmt.
+- [ ] **M5: Snowflake + AWS ingestion.** Warehouse schema for the canonical
+  price table, Lambda + EventBridge daily pulls to S3, SQL analytics.
+- [ ] **M6: Dashboard.** TypeScript/React visualization over the backtest
+  outputs.
+
+## Log
+
+| Date | Task | adw-id | Result |
+| ---- | ---- | ------ | ------ |

@@ -71,6 +71,9 @@ and its runtime state (`agents/`, `trees/`, `logs/`) live in a separate
 private repo and are gitignored here; `adw_gates.json` defines the local
 quality gates (ruff, mypy, pytest), mirroring CI.
 
+The ordered task queue, with the exact pipeline command per task, is
+`specs/TASKS.md`. One task = one spec = one run = one PR.
+
 ## Rules
 
 - Tests must never touch the network. `tests/conftest.py` blocks socket
