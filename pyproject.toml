@@ -62,4 +62,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q -m 'not manual'"
+markers = [
+    "manual: touches the network (gridstatus); excluded from the default run and CI.",
+]
