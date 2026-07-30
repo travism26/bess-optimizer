@@ -2,7 +2,7 @@
 name: determinism-tests-exclude-wallclock-fields
 description: Byte-identical determinism tests/output must exclude wall-clock fields like solve_time_seconds
 type: lesson
-source_adw_ids: [27b2b22d]
+source_adw_ids: [27b2b22d, cea65174]
 date: 2026-07-29
 ---
 

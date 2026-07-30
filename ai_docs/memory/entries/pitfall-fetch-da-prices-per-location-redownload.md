@@ -2,7 +2,7 @@
 name: fetch-da-prices-per-location-redownload
 description: fetch_da_prices redownloads the full yearly ERCOT archive once per location, not shared across locations
 type: pitfall
-source_adw_ids: [3c648beb, 3b9cf1a9, 27b2b22d]
+source_adw_ids: [3c648beb, 3b9cf1a9, 27b2b22d, cea65174]
 date: 2026-07-29
 ---
 

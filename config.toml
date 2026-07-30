@@ -7,3 +7,7 @@ initial_soc_mwh = 0.0
 locations = ["HB_NORTH", "HB_HOUSTON", "HB_WEST"]
 start = 2023-01-01
 end = 2024-12-31
+
+[rolling]
+lookahead_days = 1
+forecast = "persistence"
