@@ -57,6 +57,15 @@ This prompt helps you determine what documentation you should read based on the 
     - When troubleshooting metrics JSON determinism or output directory resolution
     - When adding tests to `tests/test_backtest_integration.py`
 
+- app_docs/feature-cea65174-rolling-horizon-backtest.md
+
+  - Conditions:
+    - When working with `src/bess/backtest/rolling.py`, `run_backtest_rolling`, or `solve_rolling_dispatch`
+    - When touching the `bess backtest --mode rolling` CLI flag or the `[rolling]` config.toml table
+    - When modifying persistence/perfect forecast mapping, local-market-day windowing, or SoC carry logic
+    - When troubleshooting DST behavior in rolling windows or the `mode` block in metrics JSON
+    - When adding tests to `tests/test_rolling_golden.py` or `tests/test_rolling_properties.py`
+
 - adws/README.md
 
   - Conditions:
