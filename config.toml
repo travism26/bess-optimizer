@@ -11,3 +11,7 @@ end = 2024-12-31
 [rolling]
 lookahead_days = 1
 forecast = "persistence"
+
+[sweep]
+durations_h = [1, 2, 4]                        # energy_mwh = power_mw * duration_h
+round_trip_efficiencies = [0.80, 0.86, 0.92]   # split sqrt() per side

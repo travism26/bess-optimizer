@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import matplotlib
 
@@ -86,6 +87,50 @@ def plot_dispatch_detail(
     )
 
     fig.autofmt_xdate()
+    fig.tight_layout()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=120)
+    plt.close(fig)
+    return output_path
+
+
+def plot_sweep_duration(
+    sweep_results_by_hub: dict[str, dict[str, Any]],
+    output_path: Path,
+) -> Path:
+    """Revenue per MW-year vs duration, one line per hub, solid rolling / dashed perfect.
+
+    sweep_results_by_hub maps hub -> the dict bess.analytics.sweep.run_sweep
+    returns for that hub; only its "duration" entry (a list of
+    {"duration_h", "perfect": {...}, "rolling": {...}}) is used. Each hub
+    gets one color, shared between its solid (rolling) and dashed (perfect)
+    lines, so the two modes are visually paired per hub. Saved as PNG.
+    """
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for hub, sweep_result in sweep_results_by_hub.items():
+        duration_points = sweep_result["duration"]
+        durations_h = [point["duration_h"] for point in duration_points]
+        rolling_revenue = [point["rolling"]["revenue_per_mw_year"] for point in duration_points]
+        perfect_revenue = [point["perfect"]["revenue_per_mw_year"] for point in duration_points]
+
+        (rolling_line,) = ax.plot(
+            durations_h, rolling_revenue, linestyle="-", marker="o", label=f"{hub} (rolling)"
+        )
+        ax.plot(
+            durations_h,
+            perfect_revenue,
+            linestyle="--",
+            marker="o",
+            color=rolling_line.get_color(),
+            label=f"{hub} (perfect)",
+        )
+
+    ax.set_xlabel("Duration (h); energy_mwh = power_mw x duration_h")
+    ax.set_ylabel("Revenue ($/MW-yr)")
+    ax.set_title("Duration sweep: revenue per MW-year vs battery duration")
+    ax.legend(loc="upper left")
     fig.tight_layout()
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -17,11 +17,13 @@ from typing import Annotated, Any, cast
 import pandas as pd
 import typer
 
+from bess.analytics.benchmarks import daily_tbk, foresight_capture_rate, tb4_capture, tbk_summary
+from bess.analytics.sweep import EFFICIENCY_CONVENTION_NOTE, SweepConfig, run_sweep
 from bess.backtest.rolling import RollingConfig, run_backtest_rolling
 from bess.backtest.runner import metrics_from_dispatch, solve_dispatch
 from bess.data.prices import fetch_da_prices
 from bess.models import BacktestResult, BatterySpec
-from bess.viz.plots import plot_cumulative_revenue, plot_dispatch_detail
+from bess.viz.plots import plot_cumulative_revenue, plot_dispatch_detail, plot_sweep_duration
 
 app = typer.Typer(help="BESS day-ahead energy arbitrage optimizer and backtester.")
 
@@ -98,6 +100,46 @@ def _rolling_config_from_settings(settings: dict[str, Any]) -> RollingConfig:
         lookahead_days=rolling_settings.get("lookahead_days", RollingConfig.lookahead_days),
         forecast=rolling_settings.get("forecast", RollingConfig.forecast),
     )
+
+
+def _sweep_config_from_settings(settings: dict[str, Any]) -> SweepConfig:
+    """The [sweep] config.toml table, falling back to SweepConfig's defaults."""
+    sweep_settings = settings.get("sweep", {})
+    return SweepConfig(
+        durations_h=tuple(sweep_settings.get("durations_h", SweepConfig.durations_h)),
+        round_trip_efficiencies=tuple(
+            sweep_settings.get("round_trip_efficiencies", SweepConfig.round_trip_efficiencies)
+        ),
+    )
+
+
+def _mode_metrics_path(output_dir: Path, location: str, mode: str) -> Path:
+    """The mode-qualified metrics JSON path for one location and mode value.
+
+    Distinct from the plain {location}_metrics.json that `backtest` also
+    always writes (M1 behavior, unchanged): both perfect and rolling runs
+    write that same unqualified filename, so it alone cannot hold both modes
+    at once. This mode-qualified path is what lets `bess benchmark` find both
+    a perfect- and a rolling-mode metrics file simultaneously.
+    """
+    return output_dir / f"{location}_metrics_{mode}.json"
+
+
+def _read_mode_metrics(output_dir: Path, location: str, mode: str) -> dict[str, Any] | None:
+    """Read _mode_metrics_path's file if present, else None.
+
+    Cross-checks the file's own `mode` block against the requested mode, so a
+    stale or hand-edited file under the expected name cannot silently
+    masquerade as the wrong mode.
+    """
+    path = _mode_metrics_path(output_dir, location, mode)
+    if not path.exists():
+        return None
+    metrics = cast(dict[str, Any], json.loads(path.read_text()))
+    actual_mode = metrics.get("mode", {}).get("mode")
+    if actual_mode != mode:
+        raise ValueError(f"{path} has mode={actual_mode!r}, expected mode={mode!r}")
+    return metrics
 
 
 def _mode_block(rolling_config: RollingConfig | None) -> dict[str, Any]:
@@ -211,6 +253,11 @@ def backtest(
     config.toml` against cached fixtures produces metrics JSON and both PNG
     plots. Covered by acceptance criterion 9 (M2a): `--mode rolling` writes
     metrics JSON containing the `mode` block plus every M1 metric field.
+
+    solve_time_seconds is the single intentionally non-deterministic field in
+    every metrics JSON this writes (wall-clock LP solve time); every other
+    field is byte-identical across repeated runs on the same inputs (closes
+    the T3 review note, specs/review_issues/review-27b2b22d.md).
     """
     settings = _load_settings(config)
     battery = _battery_from_settings(settings)
@@ -237,8 +284,18 @@ def backtest(
 
         metrics = _metrics_dict(result)
         metrics["mode"] = _mode_block(rolling_config)
+        # solve_time_seconds is the one intentionally non-deterministic field
+        # in this JSON (wall-clock LP solve time); every other field is
+        # expected to be byte-identical across repeated runs on the same
+        # inputs (closes the T3 review note, specs/review_issues/review-27b2b22d.md).
+        metrics_json = json.dumps(metrics, indent=2, sort_keys=True)
         metrics_path = resolved_output_dir / f"{location}_metrics.json"
-        metrics_path.write_text(json.dumps(metrics, indent=2, sort_keys=True))
+        metrics_path.write_text(metrics_json)
+        # Also written under a mode-qualified name (identical content) so
+        # `bess benchmark` can find both a perfect- and a rolling-mode
+        # metrics file at once; the unqualified name above is written by
+        # both modes and would otherwise collide.
+        _mode_metrics_path(resolved_output_dir, location, mode.value).write_text(metrics_json)
         typer.echo(f"{location}: revenue=${result.total_revenue_usd:,.2f} -> {metrics_path}")
 
         comparison.append({k: v for k, v in metrics.items() if k != "daily_revenue"})
@@ -279,6 +336,113 @@ def plot(config: ConfigOption = Path("config.toml"), output_dir: OutputDirOption
     revenue_plot_path = resolved_output_dir / "cumulative_revenue.png"
     plot_cumulative_revenue(daily_revenue_by_location, revenue_plot_path)
     typer.echo(f"Cumulative revenue plot -> {revenue_plot_path}")
+
+
+@app.command()
+def benchmark(
+    config: ConfigOption = Path("config.toml"), output_dir: OutputDirOption = None
+) -> None:
+    """Compute TB2/TB4 daily-spread benchmarks and, when available, capture rates.
+
+    Loads cached prices (never touches the network itself; run `bess fetch`
+    first) for every configured location and computes daily TB2/TB4
+    (bess.analytics.benchmarks.daily_tbk: raw prices, no efficiency
+    adjustment, local America/Chicago market days) plus the mean per calendar
+    year and for the requested window. When both {location}_metrics_perfect.json
+    and {location}_metrics_rolling.json already exist under the output
+    directory (written by a prior `bess backtest --mode perfect|rolling`),
+    also computes the foresight capture rate and TB4 capture for each mode
+    and includes them; a missing metrics file skips capture for that location
+    with a printed notice, never an error, and the command still exits 0.
+    Writes output/benchmarks.json.
+    """
+    settings = _load_settings(config)
+    battery = _battery_from_settings(settings)
+    cache_dir = Path(settings.get("cache_dir", _DEFAULT_CACHE_DIR))
+    resolved_output_dir = output_dir or Path(settings.get("output_dir", _DEFAULT_OUTPUT_DIR))
+    resolved_output_dir.mkdir(parents=True, exist_ok=True)
+
+    hubs: dict[str, Any] = {}
+    for location in settings["locations"]:
+        prices_df = fetch_da_prices(location, settings["start"], settings["end"], cache_dir)
+        daily_tb2 = daily_tbk(prices_df, k=2)
+        daily_tb4 = daily_tbk(prices_df, k=4)
+
+        hub_benchmarks: dict[str, Any] = {
+            "tb2": tbk_summary(daily_tb2),
+            "tb4": tbk_summary(daily_tb4),
+        }
+
+        mode_metrics = {
+            mode: _read_mode_metrics(resolved_output_dir, location, mode)
+            for mode in ("perfect", "rolling")
+        }
+        missing_modes = [mode for mode, metrics in mode_metrics.items() if metrics is None]
+        if missing_modes:
+            typer.echo(
+                f"{location}: skipping capture rates, missing {missing_modes} metrics JSON "
+                "(run `bess backtest --mode ...` first)"
+            )
+        else:
+            perfect_metrics = cast(dict[str, Any], mode_metrics["perfect"])
+            rolling_metrics = cast(dict[str, Any], mode_metrics["rolling"])
+            hub_benchmarks["capture"] = {
+                "foresight_capture_rate": foresight_capture_rate(
+                    rolling_metrics["total_revenue_usd"], perfect_metrics["total_revenue_usd"]
+                ),
+                "tb4_capture_perfect": tb4_capture(
+                    perfect_metrics["total_revenue_usd"], daily_tb4, battery.power_mw
+                ),
+                "tb4_capture_rolling": tb4_capture(
+                    rolling_metrics["total_revenue_usd"], daily_tb4, battery.power_mw
+                ),
+            }
+
+        hubs[location] = hub_benchmarks
+
+    benchmarks_path = resolved_output_dir / "benchmarks.json"
+    benchmarks_path.write_text(json.dumps(hubs, indent=2, sort_keys=True))
+    typer.echo(f"Benchmarks -> {benchmarks_path}")
+
+
+@app.command()
+def sweep(config: ConfigOption = Path("config.toml"), output_dir: OutputDirOption = None) -> None:
+    """Run the duration and round-trip-efficiency sweeps for every configured location.
+
+    Two 1-D sweeps per hub (bess.analytics.sweep.run_sweep, the [sweep]
+    config.toml table): duration over energy_mwh = power_mw x durations_h,
+    and round-trip efficiency over round_trip_efficiencies split sqrt() per
+    side (matching optimize_dispatch's 0.927-per-side default), each run in
+    both perfect and rolling ([rolling] config defaults) mode. Writes
+    output/sweep.json plus output/sweep_duration.png (revenue per MW-year vs
+    duration, one line per hub, solid rolling / dashed perfect).
+    """
+    settings = _load_settings(config)
+    battery = _battery_from_settings(settings)
+    cache_dir = Path(settings.get("cache_dir", _DEFAULT_CACHE_DIR))
+    resolved_output_dir = output_dir or Path(settings.get("output_dir", _DEFAULT_OUTPUT_DIR))
+    resolved_output_dir.mkdir(parents=True, exist_ok=True)
+
+    sweep_config = _sweep_config_from_settings(settings)
+    rolling_config = _rolling_config_from_settings(settings)
+
+    hubs: dict[str, Any] = {}
+    for location in settings["locations"]:
+        prices_df = fetch_da_prices(location, settings["start"], settings["end"], cache_dir)
+        hubs[location] = run_sweep(prices_df, battery, sweep_config, rolling_config)
+
+    sweep_results = {
+        "efficiency_convention": EFFICIENCY_CONVENTION_NOTE,
+        "rolling_config": _mode_block(rolling_config),
+        "hubs": hubs,
+    }
+    sweep_path = resolved_output_dir / "sweep.json"
+    sweep_path.write_text(json.dumps(sweep_results, indent=2, sort_keys=True))
+    typer.echo(f"Sweep results -> {sweep_path}")
+
+    plot_path = resolved_output_dir / "sweep_duration.png"
+    plot_sweep_duration(hubs, plot_path)
+    typer.echo(f"Sweep duration plot -> {plot_path}")
 
 
 if __name__ == "__main__":
