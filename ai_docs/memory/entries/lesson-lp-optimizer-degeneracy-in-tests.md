@@ -2,7 +2,7 @@
 name: lp-optimizer-degeneracy-in-tests
 description: LP dispatch optimum is often non-unique; assert net dispatch/revenue, not raw per-interval vertex values
 type: lesson
-source_adw_ids: [3b9cf1a9, 27b2b22d, cea65174]
+source_adw_ids: [3b9cf1a9, 27b2b22d, cea65174, 325296bb]
 date: 2026-07-29
 ---
 
