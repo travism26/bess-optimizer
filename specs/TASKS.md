@@ -49,13 +49,30 @@ Useful variations:
     section with real numbers from the fixture month.
   - PR: #4  Merged: 2026-07-29 (adw 27b2b22d; first attempt 5dbaba17 failed, PR #3 closed)
 
-## M2+ (specs not yet written)
+## M2: Rolling horizon + benchmarks
+
+Master spec: `specs/M2_rolling_and_benchmarks.md` (approved 2026-07-29 via
+lavish review; design decisions recorded there).
+
+- [ ] **T4: Rolling-horizon dispatch** `specs/M2a_rolling_horizon.md`
+  - Depends on: M1 merged only. Independent of T5.
+  - Run: `uv run adws/travis/travis_sdlc.py specs/M2a_rolling_horizon.md --worktree --draft-pr --dream --tui`
+  - Headline goldens: two-day foresight case (perfect 275.0 vs persistence
+    0.0, exact) and the M1 equivalence test.
+  - PR: ______  Merged: ______
+
+- [ ] **T5: Benchmarks + sweeps** `specs/M2b_benchmarks.md`
+  - Depends on: T4 merged (capture rate consumes rolling results).
+  - Run: `uv run adws/travis/travis_sdlc.py specs/M2b_benchmarks.md --worktree --draft-pr --dream --tui`
+  - Delivers the M2 headline: foresight capture rate, plus TB2/TB4, sweeps,
+    README section.
+  - PR: ______  Merged: ______
+
+## M3+ (specs not yet written)
 
 Placeholders from the master plan; each needs a spec authored (or a planning
 run) before it can enter the queue above.
 
-- [ ] **M2: Rolling horizon + benchmarks.** Imperfect-foresight dispatch mode,
-  TB2/TB4 value benchmarks, capture rate, parameter sweeps.
 - [ ] **M3: TBD** (reserved in the 6-milestone plan).
 - [ ] **M4: Rust engine.** Port `optimize_dispatch` to Rust via PyO3/maturin
   behind the frozen interface; benchmark vs Python. Prerequisite chore: re-run
