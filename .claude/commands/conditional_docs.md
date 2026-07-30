@@ -66,6 +66,17 @@ This prompt helps you determine what documentation you should read based on the 
     - When troubleshooting DST behavior in rolling windows or the `mode` block in metrics JSON
     - When adding tests to `tests/test_rolling_golden.py` or `tests/test_rolling_properties.py`
 
+- app_docs/feature-325296bb-benchmarks-sweeps.md
+
+  - Conditions:
+    - When working with `src/bess/analytics/benchmarks.py` or `src/bess/analytics/sweep.py`
+    - When touching the `bess benchmark` or `bess sweep` CLI commands
+    - When modifying TBk, foresight capture rate, or TB4 capture math
+    - When modifying `plot_sweep_duration` in `src/bess/viz/plots.py`
+    - When touching the `[sweep]` config.toml table or mode-qualified metrics JSON filenames
+    - When troubleshooting missing-metrics capture-rate skip behavior
+    - When adding tests to `tests/test_benchmarks.py` or `tests/test_sweep.py`
+
 - adws/README.md
 
   - Conditions:
