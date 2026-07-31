@@ -2,7 +2,7 @@
 name: dst-local-hour-mapping-both-directions
 description: Local-hour-of-day mapping across DST must handle 23h/25h on both source and target days, not just the target
 type: pitfall
-source_adw_ids: [cea65174]
+source_adw_ids: [cea65174, 325296bb]
 date: 2026-07-30
 ---
 

@@ -2,7 +2,7 @@
 name: highspy-untyped-mypy
 description: highspy has no type stubs; values read from it need explicit casts/annotations to satisfy mypy warn_return_any
 type: pitfall
-source_adw_ids: [3b9cf1a9, 27b2b22d, cea65174]
+source_adw_ids: [3b9cf1a9, 27b2b22d, cea65174, 325296bb]
 date: 2026-07-29
 ---
 

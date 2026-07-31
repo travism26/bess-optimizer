@@ -1,9 +1,9 @@
 ---
 name: determinism-tests-exclude-wallclock-fields
-description: Byte-identical determinism tests/output must exclude wall-clock fields like solve_time_seconds
+description: Byte-identical determinism tests/output must exclude wall-clock fields like solve_time_seconds, per JSON writer
 type: lesson
-source_adw_ids: [27b2b22d, cea65174]
-date: 2026-07-29
+source_adw_ids: [27b2b22d, cea65174, 325296bb]
+date: 2026-07-30
 ---
 
-BacktestResult's metrics include `solve_time_seconds`, a wall-clock measurement that is never reproducible run to run. AC-4-style determinism tests (asserting two consecutive runs produce identical JSON) must exclude this field from the comparison; tests/test_backtest_integration.py does this correctly. However the on-disk metrics JSON written by `bess backtest` still embeds solve_time_seconds, so the literal files are NOT byte-identical, only the deterministic subset of fields is (flagged in M1c review as undocumented tech debt, not yet fixed). When adding any future timed/wall-clock field to a result written to disk, document near the write path (docstring or comment) that determinism applies to all fields except that one, so the gap between 'test-verified determinism' and 'byte-identical files on disk' doesn't get lost again.
+BacktestResult metrics (and any other result written to JSON) include `solve_time_seconds`, a wall-clock measurement that is never reproducible run to run. AC-style determinism tests (asserting two consecutive runs produce identical JSON) must exclude this field. Every place solve_time_seconds is embedded in a JSON file needs its own docstring/comment note near the write path stating it is the intentionally non-deterministic field: `bess backtest` got this note in M2b (closing an M1c review issue), but M2b's own `sweep()`/`_scalar_metrics` (src/bess/analytics/sweep.py) embeds solve_time_seconds again and was flagged missing the same note in review. Documenting it once on one command does not cover other commands/writers; check each new JSON-writing entry point individually when adding one.
