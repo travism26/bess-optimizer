@@ -2,7 +2,7 @@
 name: adw-stale-worktree-branch-dependency-merge
 description: When a spec's slice depends on another slice merged to main, check the worktree branch isn't stale before building
 type: pitfall
-source_adw_ids: [3034ec63]
+source_adw_ids: [3034ec63, d39c4d18]
 date: 2026-08-01
 ---
 

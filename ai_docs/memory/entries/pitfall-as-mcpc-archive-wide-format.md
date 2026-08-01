@@ -2,7 +2,7 @@
 name: as-mcpc-archive-wide-format
 description: ERCOT's yearly AS MCPC archive (MIS report 13091) is wide-format with a trailing-space header and non-canonical product codes
 type: pitfall
-source_adw_ids: [6f498150, 3034ec63]
+source_adw_ids: [6f498150, 3034ec63, d39c4d18]
 date: 2026-08-01
 ---
 
