@@ -12,9 +12,10 @@ via `uv run adws/travis/travis_dream.py --working-dir <this repo>`.
 - backtest-shared-solve-for-metrics-and-plots — Frozen BacktestResult lacks per-interval dispatch arrays; share one LP solve for metrics and plots
 - capture-rate-fixture-can-equal-one — Foresight capture rate can legitimately equal exactly 1.0 on fixtures with a day-separable optimum
 - determinism-tests-exclude-wallclock-fields — Byte-identical determinism tests/output must exclude wall-clock fields like solve_time_seconds, per JSON writer
-- lp-optimizer-degeneracy-in-tests — LP dispatch optimum is often non-unique; assert net dispatch/revenue, not raw per-interval vertex values
+- lp-optimizer-degeneracy-in-tests — LP optimum is often non-unique; assert net dispatch/revenue/aggregate totals, not raw per-vertex or per-product values
 
 ## Pitfalls
+- adw-stale-worktree-branch-dependency-merge — When a spec's slice depends on another slice merged to main, check the worktree branch isn't stale before building
 - adw-worktree-port-file-cleanup — ADW port-allocation file (.ports.env) recurringly gets committed mid-pipeline; check git status and untrack before finalizing
 - as-mcpc-archive-wide-format — ERCOT's yearly AS MCPC archive (MIS report 13091) is wide-format with a trailing-space header and non-canonical product codes
 - dst-local-hour-mapping-both-directions — Local-hour-of-day mapping across DST must handle 23h/25h on both source and target days, not just the target

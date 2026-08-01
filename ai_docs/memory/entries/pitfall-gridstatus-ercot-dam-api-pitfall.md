@@ -2,7 +2,7 @@
 name: gridstatus-ercot-dam-api-pitfall
 description: gridstatus 'recent/current' report methods are unreliable for historical backfill; use yearly-archive report types instead
 type: pitfall
-source_adw_ids: [3c648beb, 3b9cf1a9, 27b2b22d, cea65174, 325296bb, 6f498150]
+source_adw_ids: [3c648beb, 3b9cf1a9, 27b2b22d, cea65174, 325296bb, 6f498150, 3034ec63]
 date: 2026-08-01
 ---
 

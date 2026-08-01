@@ -2,7 +2,7 @@
 name: capture-rate-fixture-can-equal-one
 description: Foresight capture rate can legitimately equal exactly 1.0 on fixtures with a day-separable optimum
 type: lesson
-source_adw_ids: [325296bb, 6f498150]
+source_adw_ids: [325296bb, 6f498150, 3034ec63]
 date: 2026-07-30
 ---
 

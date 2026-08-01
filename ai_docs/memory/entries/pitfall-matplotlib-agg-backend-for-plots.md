@@ -2,7 +2,7 @@
 name: matplotlib-agg-backend-for-plots
 description: src/bess/viz/plots.py must force the Agg backend; default backend can't render headless in CI
 type: pitfall
-source_adw_ids: [27b2b22d, cea65174, 325296bb, 6f498150]
+source_adw_ids: [27b2b22d, cea65174, 325296bb, 6f498150, 3034ec63]
 date: 2026-07-29
 ---
 
