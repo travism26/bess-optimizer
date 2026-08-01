@@ -97,6 +97,16 @@ This prompt helps you determine what documentation you should read based on the 
     - When troubleshooting AS award degeneracy, revenue decomposition, or the runtime budget on large horizons
     - When touching the as_lp module's import list (purity rule enforcement)
 
+- app_docs/feature-d39c4d18-as-backtest-cli.md
+
+  - Conditions:
+    - When working with `src/bess/backtest/as_runner.py` or `run_backtest_as`
+    - When touching the `bess backtest --ancillary` CLI flag or the `[ancillary]` config.toml table
+    - When modifying `AsBacktestResult` in `src/bess/models.py`
+    - When touching the AS uplift/mix leg of the `bess benchmark` CLI command or `as_uplift`/`revenue_mix` in `src/bess/analytics/benchmarks.py`
+    - When troubleshooting AS price-frame alignment, the pre-launch product mask, or ancillary metrics JSON filename collisions
+    - When adding tests to `tests/test_as_backtest_integration.py`
+
 - adws/README.md
 
   - Conditions:
