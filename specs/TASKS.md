@@ -83,7 +83,7 @@ assumptions documented in the master.
     are generated once via a real gridstatus fetch, same procedure as T1.
     Verify `Ercot.get_as_prices` vs `get_mcpc_dam` for 2023-2024 history
     during research (the get_spp lesson applies).
-  - PR: ______  Merged: ______
+  - PR: #8  Merged: 2026-08-01 (adw 6f498150)
 
 - [ ] **T7: Co-optimization LP** `specs/M3b_as_cooptimizer.md`
   - Depends on: nothing technically (pure arrays), sequenced after T6 so
@@ -91,14 +91,14 @@ assumptions documented in the master.
   - Run: `uv run adws/travis/travis_sdlc.py specs/M3b_as_cooptimizer.md --worktree --draft-pr --dream --tui`
   - Headline goldens: masked equivalence, pure REG_UP 240.0, additive
     250.0, REG_DOWN room 150.0 (all hand-derived in the slice spec).
-  - PR: ______  Merged: ______
+  - PR: #9  Merged: 2026-08-01 (adw 3034ec63)
 
 - [ ] **T8: AS backtest, CLI, README** `specs/M3c_as_backtest_cli.md`
   - Depends on: T6 AND T7 merged to main (integrates both).
   - Run: `uv run adws/travis/travis_sdlc.py specs/M3c_as_backtest_cli.md --worktree --draft-pr --dream --tui`
   - Note: finishes the M3 definition of done, including the README uplift
     headline and the honest assumptions note.
-  - PR: ______  Merged: ______
+  - PR: #10  Merged: 2026-08-01 (adw d39c4d18)
 
 ## M4+ (specs not yet written)
 
@@ -124,3 +124,6 @@ run) before it can enter the queue above.
 | 2026-07-30 | T4 M2a | cea65174 | PR #5 merged |
 | 2026-07-31 | T5 M2b | cbd77524 | FAILED: PR #6 closed, superseded by 325296bb |
 | 2026-07-31 | T5 M2b | 325296bb | PR #7 merged; M2 complete |
+| 2026-08-01 | T6 M3a | 6f498150 | PR #8 merged |
+| 2026-08-01 | T7 M3b | 3034ec63 | PR #9 merged |
+| 2026-08-01 | T8 M3c | d39c4d18 | PR #10 merged; M3 complete |
