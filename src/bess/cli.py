@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import tomllib
+from dataclasses import replace
 from datetime import date
 from enum import StrEnum
 from pathlib import Path
@@ -17,13 +18,27 @@ from typing import Annotated, Any, cast
 import pandas as pd
 import typer
 
-from bess.analytics.benchmarks import daily_tbk, foresight_capture_rate, tb4_capture, tbk_summary
+from bess.analytics.benchmarks import (
+    as_uplift,
+    daily_tbk,
+    foresight_capture_rate,
+    revenue_mix,
+    tb4_capture,
+    tbk_summary,
+)
 from bess.analytics.sweep import EFFICIENCY_CONVENTION_NOTE, SweepConfig, run_sweep
+from bess.backtest.as_runner import run_backtest_as
 from bess.backtest.rolling import RollingConfig, run_backtest_rolling
 from bess.backtest.runner import metrics_from_dispatch, solve_dispatch
 from bess.data.as_prices import fetch_as_prices
 from bess.data.prices import fetch_da_prices
-from bess.models import BacktestResult, BatterySpec
+from bess.models import (
+    DEFAULT_AS_PRODUCTS,
+    AsBacktestResult,
+    AsProduct,
+    BacktestResult,
+    BatterySpec,
+)
 from bess.viz.plots import plot_cumulative_revenue, plot_dispatch_detail, plot_sweep_duration
 
 app = typer.Typer(help="BESS day-ahead energy arbitrage optimizer and backtester.")
@@ -143,6 +158,94 @@ def _read_mode_metrics(output_dir: Path, location: str, mode: str) -> dict[str, 
     return metrics
 
 
+def _ancillary_enabled_from_settings(settings: dict[str, Any]) -> bool:
+    """Whether `[ancillary].enabled` requests the co-opt backtest without `--ancillary`."""
+    return bool(settings.get("ancillary", {}).get("enabled", False))
+
+
+def _ancillary_products_from_settings(settings: dict[str, Any]) -> tuple[AsProduct, ...]:
+    """The `[ancillary]` config.toml table's products, defaulting to DEFAULT_AS_PRODUCTS.
+
+    Product names and directions are anchored to DEFAULT_AS_PRODUCTS (the five
+    ERCOT products this project models, specs/M3_ancillary_services.md):
+    config.toml can reorder, subset, or override sustain_hours per product via
+    `[ancillary.sustain_hours]`, but cannot introduce an unknown product name.
+    """
+    ancillary_settings = settings.get("ancillary", {})
+    default_by_name = {product.name: product for product in DEFAULT_AS_PRODUCTS}
+    names = ancillary_settings.get("products", list(default_by_name))
+    sustain_overrides = ancillary_settings.get("sustain_hours", {})
+
+    products: list[AsProduct] = []
+    for name in names:
+        if name not in default_by_name:
+            raise ValueError(
+                f"Unknown AS product {name!r} in [ancillary].products; must be one of "
+                f"{sorted(default_by_name)}"
+            )
+        default_product = default_by_name[name]
+        sustain_hours = sustain_overrides.get(name, default_product.sustain_hours)
+        products.append(replace(default_product, sustain_hours=sustain_hours))
+    return tuple(products)
+
+
+def _ancillary_block(result: AsBacktestResult, products: tuple[AsProduct, ...]) -> dict[str, Any]:
+    """The additive `ancillary` block written into an ancillary-mode metrics JSON.
+
+    specs/M3c_as_backtest_cli.md item 2: products, sustain hours,
+    energy_revenue_usd, as_revenue_usd, revenue_by_product, award_mw_hours,
+    total_revenue_usd (energy leg + AS leg, the M3 uplift headline's numerator).
+    """
+    return {
+        "products": [product.name for product in products],
+        "sustain_hours": {product.name: product.sustain_hours for product in products},
+        "energy_revenue_usd": result.energy.total_revenue_usd,
+        "as_revenue_usd": result.as_revenue_usd,
+        "revenue_by_product": result.revenue_by_product.to_dict(),
+        "award_mw_hours": result.award_mw_hours.to_dict(),
+        "total_revenue_usd": result.total_revenue_usd,
+    }
+
+
+def _ancillary_metrics_path(output_dir: Path, location: str, mode: str) -> Path:
+    """The mode- and ancillary-qualified metrics JSON path for one location.
+
+    Distinct from `_mode_metrics_path`'s filename (memory:
+    metrics-json-unqualified-filename-collision): both an energy-only and an
+    ancillary run of the same mode must be able to coexist under one output
+    directory so `bess benchmark` can read both at once.
+    """
+    return output_dir / f"{location}_metrics_{mode}_ancillary.json"
+
+
+def _read_ancillary_metrics(output_dir: Path, location: str, mode: str) -> dict[str, Any] | None:
+    """Read `_ancillary_metrics_path`'s file if present, else None.
+
+    Mirrors `_read_mode_metrics`'s defensive mode cross-check.
+    """
+    path = _ancillary_metrics_path(output_dir, location, mode)
+    if not path.exists():
+        return None
+    metrics = cast(dict[str, Any], json.loads(path.read_text()))
+    actual_mode = metrics.get("mode", {}).get("mode")
+    if actual_mode != mode:
+        raise ValueError(f"{path} has mode={actual_mode!r}, expected mode={mode!r}")
+    return metrics
+
+
+def _same_window(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    """Whether two metrics JSONs' daily_revenue blocks span the same date range.
+
+    Neither metrics JSON carries an explicit start/end field, so the window is
+    read off the daily_revenue keys instead (gotcha 4: guards AS uplift
+    against silently dividing a July co-opt total by a full-year energy-only
+    total, or vice versa).
+    """
+    a_days = a["daily_revenue"]
+    b_days = b["daily_revenue"]
+    return (min(a_days), max(a_days)) == (min(b_days), max(b_days))
+
+
 def _mode_block(rolling_config: RollingConfig | None) -> dict[str, Any]:
     """The additive `mode` block in metrics JSON (specs/M2_rolling_and_benchmarks.md).
 
@@ -245,6 +348,13 @@ def backtest(
             help="'perfect' (default, full horizon) or 'rolling' (M2, one market day at a time).",
         ),
     ] = BacktestMode.perfect,
+    ancillary: Annotated[
+        bool,
+        typer.Option(
+            "--ancillary",
+            help="Also run the M3 energy + AS co-optimized backtest (perfect mode only).",
+        ),
+    ] = False,
 ) -> None:
     """Run the backtest for every configured location.
 
@@ -258,6 +368,16 @@ def backtest(
     block regardless of mode. Both modes write the cumulative-revenue PNG
     across all locations.
 
+    `--ancillary` (or `[ancillary].enabled` in config.toml) additionally runs
+    the M3 energy + AS co-optimizer (bess.backtest.as_runner.run_backtest_as)
+    per location and writes {location}_metrics_{mode}_ancillary.json with the
+    additive `ancillary` block (products, sustain hours, energy_revenue_usd,
+    as_revenue_usd, revenue_by_product, award_mw_hours, total_revenue_usd).
+    The energy-only pipeline above runs completely unchanged either way, so
+    its output files are byte-identical to a run without `--ancillary`.
+    Perfect mode only: `--ancillary --mode rolling` exits nonzero (M3 is
+    perfect-foresight only, specs/M3_ancillary_services.md "Out of scope").
+
     Covered by acceptance criterion 8 (M1): `bess backtest --config
     config.toml` against cached fixtures produces metrics JSON and both PNG
     plots. Covered by acceptance criterion 9 (M2a): `--mode rolling` writes
@@ -269,6 +389,15 @@ def backtest(
     the T3 review note, specs/review_issues/review-27b2b22d.md).
     """
     settings = _load_settings(config)
+    ancillary_enabled = ancillary or _ancillary_enabled_from_settings(settings)
+    if ancillary_enabled and mode == BacktestMode.rolling:
+        typer.echo(
+            "--ancillary is not supported with --mode rolling: M3 ancillary-service "
+            "co-optimization is perfect-foresight only (specs/M3_ancillary_services.md, "
+            "'Out of scope'). Run in --mode perfect (the default), or drop --ancillary."
+        )
+        raise typer.Exit(code=1)
+
     battery = _battery_from_settings(settings)
     cache_dir = Path(settings.get("cache_dir", _DEFAULT_CACHE_DIR))
     resolved_output_dir = output_dir or Path(settings.get("output_dir", _DEFAULT_OUTPUT_DIR))
@@ -277,6 +406,12 @@ def backtest(
     rolling_config = (
         _rolling_config_from_settings(settings) if mode == BacktestMode.rolling else None
     )
+
+    ancillary_products: tuple[AsProduct, ...] | None = None
+    ancillary_prices_df: pd.DataFrame | None = None
+    if ancillary_enabled:
+        ancillary_products = _ancillary_products_from_settings(settings)
+        ancillary_prices_df = fetch_as_prices(settings["start"], settings["end"], cache_dir)
 
     comparison: list[dict[str, Any]] = []
     daily_revenue_by_location: dict[str, pd.Series] = {}
@@ -309,6 +444,20 @@ def backtest(
 
         comparison.append({k: v for k, v in metrics.items() if k != "daily_revenue"})
         daily_revenue_by_location[location] = result.daily_revenue
+
+        if ancillary_products is not None and ancillary_prices_df is not None:
+            prices_df = fetch_da_prices(location, settings["start"], settings["end"], cache_dir)
+            as_result = run_backtest_as(prices_df, ancillary_prices_df, battery, ancillary_products)
+            ancillary_metrics = _metrics_dict(as_result.energy)
+            ancillary_metrics["mode"] = _mode_block(None)
+            ancillary_metrics["ancillary"] = _ancillary_block(as_result, ancillary_products)
+            ancillary_json = json.dumps(ancillary_metrics, indent=2, sort_keys=True)
+            ancillary_path = _ancillary_metrics_path(resolved_output_dir, location, mode.value)
+            ancillary_path.write_text(ancillary_json)
+            typer.echo(
+                f"{location}: AS co-opt total=${as_result.total_revenue_usd:,.2f} "
+                f"-> {ancillary_path}"
+            )
 
     comparison_path = resolved_output_dir / "comparison.json"
     comparison_path.write_text(json.dumps(comparison, indent=2, sort_keys=True))
@@ -351,7 +500,7 @@ def plot(config: ConfigOption = Path("config.toml"), output_dir: OutputDirOption
 def benchmark(
     config: ConfigOption = Path("config.toml"), output_dir: OutputDirOption = None
 ) -> None:
-    """Compute TB2/TB4 daily-spread benchmarks and, when available, capture rates.
+    """Compute TB2/TB4 daily-spread benchmarks and, when available, capture rates and AS uplift.
 
     Loads cached prices (never touches the network itself; run `bess fetch`
     first) for every configured location and computes daily TB2/TB4
@@ -361,9 +510,12 @@ def benchmark(
     and {location}_metrics_rolling.json already exist under the output
     directory (written by a prior `bess backtest --mode perfect|rolling`),
     also computes the foresight capture rate and TB4 capture for each mode
-    and includes them; a missing metrics file skips capture for that location
-    with a printed notice, never an error, and the command still exits 0.
-    Writes output/benchmarks.json.
+    and includes them. When both {location}_metrics_perfect.json and
+    {location}_metrics_perfect_ancillary.json exist (written by a prior `bess
+    backtest --ancillary`), also computes the M3 AS uplift (co-optimized
+    total revenue / energy-only revenue) and revenue mix by product. Either
+    pair missing skips that section for that location with a printed notice,
+    never an error, and the command still exits 0. Writes output/benchmarks.json.
     """
     settings = _load_settings(config)
     battery = _battery_from_settings(settings)
@@ -405,6 +557,32 @@ def benchmark(
                 "tb4_capture_rolling": tb4_capture(
                     rolling_metrics["total_revenue_usd"], daily_tb4, battery.power_mw
                 ),
+            }
+
+        energy_only_metrics = mode_metrics["perfect"]
+        ancillary_metrics = _read_ancillary_metrics(resolved_output_dir, location, "perfect")
+        if energy_only_metrics is None or ancillary_metrics is None:
+            missing = [
+                f"{location}_metrics_perfect.json" if energy_only_metrics is None else None,
+                f"{location}_metrics_perfect_ancillary.json" if ancillary_metrics is None else None,
+            ]
+            typer.echo(
+                f"{location}: skipping AS uplift, missing {[m for m in missing if m]} "
+                "(run `bess backtest --ancillary` first)"
+            )
+        else:
+            if not _same_window(energy_only_metrics, ancillary_metrics):
+                raise ValueError(
+                    f"{location}: {location}_metrics_perfect.json and "
+                    f"{location}_metrics_perfect_ancillary.json cover different windows; "
+                    "AS uplift requires both from the same backtest window"
+                )
+            ancillary_block = cast(dict[str, Any], ancillary_metrics["ancillary"])
+            hub_benchmarks["ancillary"] = {
+                "as_uplift": as_uplift(
+                    ancillary_block["total_revenue_usd"], energy_only_metrics["total_revenue_usd"]
+                ),
+                "revenue_mix": revenue_mix(ancillary_block["revenue_by_product"]),
             }
 
         hubs[location] = hub_benchmarks

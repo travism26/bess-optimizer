@@ -15,3 +15,14 @@ forecast = "persistence"
 [sweep]
 durations_h = [1, 2, 4]                        # energy_mwh = power_mw * duration_h
 round_trip_efficiencies = [0.80, 0.86, 0.92]   # split sqrt() per side
+
+[ancillary]
+enabled = false            # backtest co-opt off unless --ancillary or this flag
+products = ["REG_UP", "REG_DOWN", "RRS", "ECRS", "NONSPIN"]
+
+[ancillary.sustain_hours]  # defaults for DEFAULT_AS_PRODUCTS
+REG_UP = 1.0
+REG_DOWN = 1.0
+RRS = 1.0
+ECRS = 2.0
+NONSPIN = 4.0
