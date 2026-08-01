@@ -21,6 +21,7 @@ from bess.analytics.benchmarks import daily_tbk, foresight_capture_rate, tb4_cap
 from bess.analytics.sweep import EFFICIENCY_CONVENTION_NOTE, SweepConfig, run_sweep
 from bess.backtest.rolling import RollingConfig, run_backtest_rolling
 from bess.backtest.runner import metrics_from_dispatch, solve_dispatch
+from bess.data.as_prices import fetch_as_prices
 from bess.data.prices import fetch_da_prices
 from bess.models import BacktestResult, BatterySpec
 from bess.viz.plots import plot_cumulative_revenue, plot_dispatch_detail, plot_sweep_duration
@@ -203,12 +204,14 @@ def fetch(
         typer.Option("--cache-dir", help="Parquet cache directory. Overrides config.toml."),
     ] = None,
 ) -> None:
-    """Fetch DA hub prices via gridstatus into the local parquet cache.
+    """Fetch DA hub prices and AS clearing prices via gridstatus into the local parquet cache.
 
     For each configured location, calls bess.data.prices.fetch_da_prices over
-    the configured window and reports what was cached. This is the only
-    command that touches the network (acceptance criterion 9: CI never runs
-    it).
+    the configured window and reports what was cached. Then, once per
+    invocation (ancillary MCPCs are system-wide, not per hub; spec item 4),
+    calls bess.data.as_prices.fetch_as_prices over the same window. This is
+    the only command that touches the network (acceptance criterion 9: CI
+    never runs it).
     """
     settings = _load_settings(config)
 
@@ -223,6 +226,12 @@ def fetch(
             f"{location}: {len(df)} rows for [{resolved_start}, {resolved_end}] "
             f"cached under {resolved_cache_dir}"
         )
+
+    as_df = fetch_as_prices(resolved_start, resolved_end, resolved_cache_dir)
+    typer.echo(
+        f"AS MCPC: {len(as_df)} rows for [{resolved_start}, {resolved_end}] "
+        f"cached under {resolved_cache_dir}"
+    )
 
 
 @app.command()
