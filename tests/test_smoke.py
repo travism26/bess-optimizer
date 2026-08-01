@@ -20,6 +20,7 @@ def test_imports_resolve() -> None:
     import bess
     import bess.backtest.runner
     import bess.cli
+    import bess.data.as_prices
     import bess.data.prices
     import bess.optimizer.lp
     import bess.viz.plots

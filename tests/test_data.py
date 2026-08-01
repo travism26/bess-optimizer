@@ -211,15 +211,15 @@ def _imports_gridstatus(path: Path) -> bool:
     return False
 
 
-def test_gridstatus_import_confined_to_prices_module() -> None:
-    """Acceptance criterion 6: only data/prices.py may import gridstatus."""
+def test_gridstatus_import_confined_to_data_modules() -> None:
+    """Acceptance criterion 6: only data/prices.py and data/as_prices.py may import gridstatus."""
     src_root = Path(__file__).parent.parent / "src" / "bess"
-    prices_module = src_root / "data" / "prices.py"
+    allowed_modules = {src_root / "data" / "prices.py", src_root / "data" / "as_prices.py"}
 
     offenders = [
         path
         for path in src_root.rglob("*.py")
-        if path != prices_module and _imports_gridstatus(path)
+        if path not in allowed_modules and _imports_gridstatus(path)
     ]
 
     assert offenders == []

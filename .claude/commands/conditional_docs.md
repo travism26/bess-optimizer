@@ -77,6 +77,16 @@ This prompt helps you determine what documentation you should read based on the 
     - When troubleshooting missing-metrics capture-rate skip behavior
     - When adding tests to `tests/test_benchmarks.py` or `tests/test_sweep.py`
 
+- app_docs/feature-6f498150-as-data-layer.md
+
+  - Conditions:
+    - When working with `src/bess/data/as_prices.py` or `fetch_as_prices`
+    - When touching the AS-price leg of the `bess fetch` CLI command
+    - When modifying the ECRS launch rule, per-product gap validation, or the raw-to-canonical product name mapping
+    - When troubleshooting which gridstatus/MIS report serves historical ERCOT AS MCPCs
+    - When adding tests that need DST-transition or raw AS fixtures under `tests/fixtures/as_*`
+    - When touching the gridstatus import-confinement guard in `tests/test_data.py`
+
 - adws/README.md
 
   - Conditions:
