@@ -87,6 +87,16 @@ This prompt helps you determine what documentation you should read based on the 
     - When adding tests that need DST-transition or raw AS fixtures under `tests/fixtures/as_*`
     - When touching the gridstatus import-confinement guard in `tests/test_data.py`
 
+- app_docs/feature-3034ec63-as-cooptimizer.md
+
+  - Conditions:
+    - When working with `src/bess/optimizer/as_lp.py` or `optimize_dispatch_as`
+    - When modifying `AsProduct`, `DEFAULT_AS_PRODUCTS`, or `AsDispatchResult` in `src/bess/models.py`
+    - When changing the AS award coupling/adequacy constraints, column layout, or the up/down pinned conventions
+    - When adding golden or property tests for the co-optimizer
+    - When troubleshooting AS award degeneracy, revenue decomposition, or the runtime budget on large horizons
+    - When touching the as_lp module's import list (purity rule enforcement)
+
 - adws/README.md
 
   - Conditions:
