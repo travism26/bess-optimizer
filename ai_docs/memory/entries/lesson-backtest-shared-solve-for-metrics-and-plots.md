@@ -2,7 +2,7 @@
 name: backtest-shared-solve-for-metrics-and-plots
 description: Frozen BacktestResult lacks per-interval dispatch arrays; share one LP solve for metrics and plots
 type: lesson
-source_adw_ids: [27b2b22d, cea65174, 325296bb]
+source_adw_ids: [27b2b22d, cea65174, 325296bb, 6f498150]
 date: 2026-07-30
 ---
 
