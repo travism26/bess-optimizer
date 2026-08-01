@@ -1,8 +1,10 @@
 """Frozen dataclasses shared across the whole project.
 
-These are the frozen contracts from specs/M1_python_core.md. The M4 Rust engine
-must produce and consume these exact shapes, so do not rename, reorder, or
-retype fields without a spec change.
+These are the frozen contracts from specs/M1_python_core.md (BatterySpec,
+DispatchResult, BacktestResult) plus the additive M3 ancillary-service
+contracts from specs/M3_ancillary_services.md (AsProduct, DEFAULT_AS_PRODUCTS,
+AsDispatchResult). The M4 Rust engine must produce and consume these exact
+shapes, so do not rename, reorder, or retype fields without a spec change.
 """
 
 from __future__ import annotations
@@ -64,3 +66,52 @@ class BacktestResult:
     daily_revenue: pd.Series  # index: date, values: $ revenue per day
     simultaneous_hours: int  # summed over the horizon
     solve_time_seconds: float  # wall-clock time of the LP solve
+
+
+@dataclass(frozen=True)
+class AsProduct:
+    """One ERCOT ancillary-service product's identity and adequacy duration.
+
+    sustain_hours is the energy adequacy duration backing an award (the
+    master spec's "LP formulation" section): how many hours of full-power
+    energy an award of 1 MW must be backed by in the SoC adequacy
+    constraints. It is a modeling assumption approximating ERCOT duration
+    rules, not a tariff citation (specs/M3_ancillary_services.md, "Modeling
+    assumptions").
+    """
+
+    name: str  # canonical product name, e.g. "REG_UP"
+    direction: str  # "up" | "down"
+    sustain_hours: float  # energy adequacy duration backing an award
+
+
+# The five ERCOT DAM AS products with their default sustain hours
+# (specs/M3_ancillary_services.md, "Config additions", [ancillary.sustain_hours]).
+# REG_UP, RRS, ECRS, and NONSPIN are "up" products (capacity to increase net
+# output); REG_DOWN is the sole "down" product (capacity to decrease net
+# output / absorb more energy).
+DEFAULT_AS_PRODUCTS: tuple[AsProduct, ...] = (
+    AsProduct(name="REG_UP", direction="up", sustain_hours=1.0),
+    AsProduct(name="REG_DOWN", direction="down", sustain_hours=1.0),
+    AsProduct(name="RRS", direction="up", sustain_hours=1.0),
+    AsProduct(name="ECRS", direction="up", sustain_hours=2.0),
+    AsProduct(name="NONSPIN", direction="up", sustain_hours=4.0),
+)
+
+
+@dataclass(frozen=True)
+class AsDispatchResult:
+    """Output of a single optimize_dispatch_as() energy + AS co-optimization solve.
+
+    dispatch.objective_value is the FULL co-optimized dollar figure (energy
+    plus AS), not energy alone. products gives the row order for awards_mw
+    and is echoed back from the caller's input, never re-sorted, so it is the
+    key downstream code (e.g. M3c's per-product revenue breakdown) must use
+    to interpret awards_mw's rows.
+    """
+
+    dispatch: DispatchResult  # objective_value is the FULL co-optimized $
+    products: tuple[AsProduct, ...]  # row order for awards_mw and as_prices
+    awards_mw: np.ndarray  # shape (P, T), >= 0
+    energy_revenue_usd: float  # sum_t p_t * (d_t - c_t) * dt
+    as_revenue_usd: float  # sum_{p,t} q_pt * a_pt * dt
