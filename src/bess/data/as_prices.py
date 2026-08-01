@@ -63,8 +63,10 @@ ECRS_LAUNCH = date(2023, 6, 10)
 
 # Per-product launch dates, used as the lower bound of each product's gap
 # validation window. Products absent from this map are treated as live for
-# the entire history this project targets.
-_PRODUCT_LAUNCH: dict[str, date] = {"ECRS": ECRS_LAUNCH}
+# the entire history this project targets. Public so bess.backtest.as_runner
+# (M3c) can build the same launch-rule availability mask without reaching
+# into a private name.
+PRODUCT_LAUNCH: dict[str, date] = {"ECRS": ECRS_LAUNCH}
 
 # gridstatus's raw MIS 13091 column names (post whitespace-strip) mapped to
 # canonical product names. Explicit and exhaustive: an unrecognized raw
@@ -179,7 +181,7 @@ def _validate(df: pd.DataFrame, start: date, end: date) -> None:
 
     Checks column names and dtypes, then per product: no duplicates, strict
     monotonicity, and no gaps between the later of `start` and that product's
-    launch date (see `_PRODUCT_LAUNCH`) and `end`. Iterates every known
+    launch date (see `PRODUCT_LAUNCH`) and `end`. Iterates every known
     product, not just the ones present in `df`, so a product missing entirely
     is caught the same way as a partial gap. A gap raises listing every
     missing (product, interval) pair; never silently interpolated (spec
@@ -212,7 +214,7 @@ def _validate(df: pd.DataFrame, start: date, end: date) -> None:
         if not group.is_monotonic_increasing:
             raise ValueError(f"interval_start_utc is not sorted increasing for product {product}")
 
-        effective_start = max(start, _PRODUCT_LAUNCH.get(product, date.min))
+        effective_start = max(start, PRODUCT_LAUNCH.get(product, date.min))
         if effective_start > end:
             # The whole requested window is before this product's launch:
             # nothing is expected, not even one interval (pd.date_range with

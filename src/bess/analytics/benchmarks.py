@@ -93,3 +93,29 @@ def tb4_capture(total_revenue_usd: float, daily_tb4: pd.Series, power_mw: float)
     construction.
     """
     return total_revenue_usd / (float(daily_tb4.sum()) * power_mw)
+
+
+def as_uplift(coopt_total_revenue_usd: float, energy_only_revenue_usd: float) -> float:
+    """AS uplift: co-optimized total revenue / energy-only revenue, the M3 headline.
+
+    Both figures must come from the same battery, window, and hub
+    (specs/M3_ancillary_services.md, "Objective"); bess.cli's benchmark
+    command enforces this by comparing the two source metrics JSONs'
+    daily_revenue date ranges before calling this function. A value outside
+    the [1.0, 8.0] sanity corridor documented in specs/M3c_as_backtest_cli.md
+    signals a units or alignment bug, not a market finding.
+    """
+    return coopt_total_revenue_usd / energy_only_revenue_usd
+
+
+def revenue_mix(revenue_by_product: dict[str, float]) -> dict[str, float]:
+    """Each AS product's share of total AS revenue, product name -> fraction of the whole.
+
+    revenue_by_product is the ancillary metrics JSON's revenue_by_product
+    block (dollars per product over the window); fractions sum to 1.0. Per-
+    product dollar figures themselves can be degenerate under LP ties (memory:
+    lp-optimizer-degeneracy-in-tests), so this mix is reported as a fixture
+    illustration, not asserted against a per-product golden value.
+    """
+    total = sum(revenue_by_product.values())
+    return {name: value / total for name, value in revenue_by_product.items()}

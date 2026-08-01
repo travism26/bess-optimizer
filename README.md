@@ -8,23 +8,28 @@ in behind the same frozen interfaces in a later milestone.
 
 ## Scope note (read this before quoting numbers)
 
-This model captures day-ahead energy arbitrage only, with perfect foresight.
-That understates and misstates total ERCOT BESS revenue: in recent years the
-majority of real ERCOT battery revenue has come from ancillary services
-(Regulation, RRS, ECRS, Non-Spin), not energy arbitrage, and real operators do
-not have perfect foresight. Treat the perfect-foresight number as an upper
-bound on DA energy arbitrage value, not a project pro forma; the rolling-
-horizon mode below is the honest number next to it. Ancillary-service
-co-optimization is still on the roadmap.
+This model captures day-ahead energy arbitrage, and, optionally, ancillary-
+service (AS) capacity co-optimization (Regulation Up/Down, RRS, ECRS,
+Non-Spin), both under perfect foresight. Neither number alone is the honest
+one: energy-only arbitrage understates total ERCOT BESS revenue (in recent
+years the majority of real ERCOT battery revenue has come from ancillary
+services, not energy arbitrage), while the AS co-optimized number overstates
+it (capacity payments only: no deployment energy, no performance or mileage
+payments, no failure-to-provide risk, and a price-taker assumption that our
+own bids never move the clearing price; see "Modeling assumptions" below).
+The honest number for a real operator lies between the energy-only and
+co-optimized totals. Real operators also lack perfect foresight; the rolling-
+horizon mode is the honest number next to the energy-only upper bound.
 
 ## Quick start
 
 ```
 uv sync
-uv run bess fetch --config config.toml               # pulls prices (network)
+uv run bess fetch --config config.toml               # pulls prices + AS MCPCs (network)
 uv run bess backtest --config config.toml             # perfect-foresight metrics JSON + plots
 uv run bess backtest --config config.toml --mode rolling  # honest, one-day-lookahead metrics
-uv run bess benchmark --config config.toml             # TB2/TB4 + capture rates
+uv run bess backtest --config config.toml --ancillary # + energy/AS co-optimized metrics JSON
+uv run bess benchmark --config config.toml             # TB2/TB4 + capture rates + AS uplift
 uv run bess sweep --config config.toml                 # duration/efficiency sweeps + plot
 ```
 
@@ -105,6 +110,60 @@ exactly, with the persistence forecast costing a small amount only at the
 4-hour point, where longer holds make the lookahead's accuracy matter more.
 
 ![Duration sweep](docs/sweep_duration.png)
+
+## M3 results: ancillary service co-optimization
+
+M1 and M2 arbitrage day-ahead energy only. M3 adds a co-optimizer that awards
+capacity into the five ERCOT ancillary-service (AS) products (Regulation Up,
+Regulation Down, RRS, ECRS, Non-Spin) alongside energy dispatch, in a single
+perfect-foresight LP. Numbers below are from `bess backtest --ancillary` and
+`bess benchmark`, same fixture (HB_NORTH, July 2023), hub, and default
+battery (100 MW / 200 MWh, 0.927 charge/discharge efficiency) as M1 and M2.
+
+**Headline: AS uplift.** Co-optimized total revenue / energy-only revenue,
+same battery and window: **2.77x** for HB_NORTH, July 2023 (energy-only
+$970,937.15 vs co-optimized $2,689,961.68). Most of that total is AS capacity
+revenue ($2,122,585.22); the co-optimized energy leg alone falls to
+$567,376.46, lower than the pure energy-only run, because the battery trades
+away some arbitrage to sell capacity instead. AS uplift sits well inside the
+spec's [1.0, 8.0] sanity corridor for this fixture month.
+
+| Mode                     | Energy revenue | AS revenue    | Total revenue |
+| ------------------------ | -------------- | ------------- | ------------- |
+| Energy-only (M1)         | $970,937.15    | --            | $970,937.15   |
+| Energy + AS co-opt (M3)  | $567,376.46    | $2,122,585.22 | $2,689,961.68 |
+
+**Revenue mix by product**, HB_NORTH, July 2023:
+
+| Product  | Revenue        | Share  | Award (MW-h) |
+| -------- | -------------- | ------ | ------------- |
+| ECRS     | $1,275,151.46  | 60.1%  | 14,623.9      |
+| REG_UP   | $447,668.83    | 21.1%  | 38,163.4      |
+| REG_DOWN | $268,920.72    | 12.7%  | 52,581.9      |
+| RRS      | $130,844.21    | 6.2%   | 1,837.4       |
+| NONSPIN  | $0.00          | 0.0%   | 0.0           |
+
+NONSPIN earns exactly $0.00: its 4-hour sustain-duration assumption is
+structurally unaffordable for a 2-hour (200 MWh / 100 MW) battery. That is a
+real modeling consequence of the sustain-hours assumption below, not a bug.
+Per-product dollar figures can shift under LP ties at identical total
+revenue (the LP's optimum is not always unique at the per-product level);
+treat this table as a fixture illustration, not a precise attribution.
+
+**Modeling assumptions** (specs/M3_ancillary_services.md, "Modeling
+assumptions", copied verbatim): Price taker: our awards never move the MCPC.
+100 percent clearing: every offered MW is awarded at the clearing price.
+Capacity payments only: no deployment energy, no performance or mileage
+payments, no failure-to-provide risk. Sustain durations are modeling
+assumptions approximating ERCOT duration rules, not tariff citations. Under
+these assumptions the co-opt number OVERSTATES achievable AS revenue, the
+mirror image of the energy-only understatement; the honest number lies
+between.
+
+Ancillary co-optimization is perfect-foresight only in M3 (`--ancillary
+--mode rolling` is out of scope and exits with an error); annualized figures
+throughout this README divide by the actual observed window length, never a
+hardcoded 8760-hour year.
 
 ## License
 

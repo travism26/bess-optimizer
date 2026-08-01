@@ -2,7 +2,7 @@
 name: timestamp-plus-timedelta-days-crosses-dst
 description: Timestamp + Timedelta(days=N) on tz-aware data adds exact elapsed hours, not calendar days, and drifts across DST
 type: pitfall
-source_adw_ids: [6f498150, 3034ec63]
+source_adw_ids: [6f498150, 3034ec63, d39c4d18]
 date: 2026-08-01
 ---
 

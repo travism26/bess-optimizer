@@ -2,7 +2,7 @@
 name: ast-based-import-confinement-guard
 description: Guard tests that confine an import (e.g. gridstatus, highspy) to one module should parse the AST, not grep source text
 type: lesson
-source_adw_ids: [3c648beb, 3b9cf1a9, 27b2b22d, cea65174, 325296bb, 6f498150, 3034ec63]
+source_adw_ids: [3c648beb, 3b9cf1a9, 27b2b22d, cea65174, 325296bb, 6f498150, 3034ec63, d39c4d18]
 date: 2026-08-01
 ---
 

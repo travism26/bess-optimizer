@@ -3,8 +3,9 @@
 These are the frozen contracts from specs/M1_python_core.md (BatterySpec,
 DispatchResult, BacktestResult) plus the additive M3 ancillary-service
 contracts from specs/M3_ancillary_services.md (AsProduct, DEFAULT_AS_PRODUCTS,
-AsDispatchResult). The M4 Rust engine must produce and consume these exact
-shapes, so do not rename, reorder, or retype fields without a spec change.
+AsDispatchResult, AsBacktestResult). The M4 Rust engine must produce and
+consume these exact shapes, so do not rename, reorder, or retype fields
+without a spec change.
 """
 
 from __future__ import annotations
@@ -115,3 +116,23 @@ class AsDispatchResult:
     awards_mw: np.ndarray  # shape (P, T), >= 0
     energy_revenue_usd: float  # sum_t p_t * (d_t - c_t) * dt
     as_revenue_usd: float  # sum_{p,t} q_pt * a_pt * dt
+
+
+@dataclass(frozen=True)
+class AsBacktestResult:
+    """Revenue metrics for one location's co-optimized energy + AS backtest.
+
+    energy is the M1 BacktestResult computed on the co-optimized dispatch's
+    ENERGY leg only (bess.backtest.as_runner replaces the raw co-optimized
+    DispatchResult.objective_value with AsDispatchResult.energy_revenue_usd
+    before scoring it with the same metrics_from_dispatch code path M1/M2
+    use, so energy.total_revenue_usd is directly comparable to an
+    energy-only BacktestResult field by field). total_revenue_usd is the
+    energy leg plus the AS leg.
+    """
+
+    energy: BacktestResult  # M1 metrics computed on the co-optimized dispatch
+    total_revenue_usd: float  # energy + AS
+    as_revenue_usd: float
+    revenue_by_product: pd.Series  # index: product name, values: $ over the window
+    award_mw_hours: pd.Series  # index: product name, values: MW-h awarded
