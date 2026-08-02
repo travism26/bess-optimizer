@@ -100,14 +100,43 @@ assumptions documented in the master.
     headline and the honest assumptions note.
   - PR: #10  Merged: 2026-08-01 (adw d39c4d18)
 
-## M4+ (specs not yet written)
+## M4: Rust dispatch engine
+
+Master spec: `specs/M4_rust_engine.md` (authored 2026-08-02). Port
+`optimize_dispatch` to Rust (highs crate, PyO3/maturin) behind the frozen
+interface; benchmark vs Python. Twist: T10 is HUMAN-WRITTEN (Travis learns
+Rust; agent tutors only, per the master's binding Learning protocol). Plan
+and rationale: `ai_docs/research/learning/rust-learning-plan-m4.md`.
+
+Manual pre-step before T9 (harness side, private repo): re-run the ADW
+command tailoring for Rust.
+
+- [ ] **T9: Rust scaffold + toolchain wiring** `specs/M4a_rust_scaffold.md`
+  - Depends on: M3 merged, manual pre-step done.
+  - Run: `uv run adws/travis/travis_sdlc.py specs/M4a_rust_scaffold.md --worktree --draft-pr --dream --tui`
+  - Note: boilerplate only (crate, maturin, CI rust job, gates,
+    hello-world extension). Zero LP logic; M4b owns the
+    optimize_dispatch name from the start.
+  - PR: ______  Merged: ______
+
+- [ ] **T10: Rust LP core, HAND-WRITTEN** `specs/M4b_rust_lp_core.md`
+  - Depends on: T9 merged.
+  - Run: NOT an ADW run. Travis writes it by hand, agent in tutoring mode
+    only; the spec is the checklist and acceptance bar. Merge is blocked
+    on the review-gate answers in the PR description.
+  - PR: ______  Merged: ______
+
+- [ ] **T11: Engine parity, CLI, benchmarks** `specs/M4c_engine_parity_bench.md`
+  - Depends on: T9 AND T10 merged.
+  - Run: `uv run adws/travis/travis_sdlc.py specs/M4c_engine_parity_bench.md --worktree --draft-pr --dream --tui`
+  - Note: finishes the M4 definition of done: parity suite, --engine
+    flag, bench-engine JSON, README speedup table.
+  - PR: ______  Merged: ______
+
+## M5+ (specs not yet written)
 
 Placeholders from the master plan; each needs a spec authored (or a planning
 run) before it can enter the queue above.
-- [ ] **M4: Rust engine.** Port `optimize_dispatch` to Rust via PyO3/maturin
-  behind the frozen interface; benchmark vs Python. Prerequisite chore: re-run
-  the ADW command tailoring and extend `adw_gates.json` for cargo
-  build/test/clippy/fmt.
 - [ ] **M5: Snowflake + AWS ingestion.** Warehouse schema for the canonical
   price table, Lambda + EventBridge daily pulls to S3, SQL analytics.
 - [ ] **M6: Dashboard.** TypeScript/React visualization over the backtest
