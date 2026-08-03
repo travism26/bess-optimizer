@@ -1,0 +1,25 @@
+[package]
+name = "bess_engine"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "bess_engine"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# PyO3 and rust-numpy are pinned as an exact compatible pair (numpy 0.28.0
+# requires pyo3 ^0.28); do not loosen these independently. No
+# `extension-module` feature is declared here: maturin sets
+# PYO3_BUILD_EXTENSION_MODULE=1 itself when it builds the wheel, and
+# declaring the feature unconditionally breaks `cargo build`/`cargo test`
+# linking against libpython (see specs/M4a_rust_scaffold.md gotchas).
+pyo3 = "0.28.3"
+numpy = "0.28.0"
+# highs (safe wrapper) does not re-export highs_sys, so a direct highs-sys
+# dependency is needed for engine_info() to prove the native HiGHS link.
+highs = "2.4.0"
+highs-sys = "1.15"
+# Declared here for M4b's DispatchError; unused in this scaffold slice.
+thiserror = "2.0.19"

@@ -35,6 +35,11 @@ uv run bess sweep --config config.toml                 # duration/efficiency swe
 
 All commands after `fetch` run entirely from the parquet cache (no network).
 
+The Rust dispatch engine (`bess_engine`) is optional and, as of M4a, a
+hello-world scaffold only: `uv run maturin develop --manifest-path
+rust/bess_engine/Cargo.toml` builds and installs it into `.venv`; without it,
+`bess backtest` runs entirely on the Python LP engine.
+
 ## Architecture
 
 TODO: module diagram and data flow (data/prices -> optimizer/lp -> backtest ->
