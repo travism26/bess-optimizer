@@ -46,3 +46,6 @@ data/*.parquet
 .DS_Store
 .idea/
 .vscode/
+
+# ADW harness port allocation, per-worktree runtime state, never commit
+.ports.env
