@@ -28,3 +28,48 @@ jobs:
       # tests/conftest.py blocks socket connections outright.
       - name: Test (pytest)
         run: uv run pytest
+
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # highs-sys builds HiGHS from source via cmake + bindgen; bindgen needs
+      # libclang. cmake and a C++ toolchain are preinstalled on the runner.
+      - name: Install libclang (for bindgen)
+        run: sudo apt-get update && sudo apt-get install -y libclang-dev
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust/bess_engine
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Rust fmt check
+        run: cargo fmt --manifest-path rust/bess_engine/Cargo.toml -- --check
+
+      - name: Rust clippy
+        run: cargo clippy --manifest-path rust/bess_engine/Cargo.toml --all-targets -- -D warnings
+
+      - name: Rust unit tests
+        run: cargo test --manifest-path rust/bess_engine/Cargo.toml
+
+      - name: Build and install the bess_engine extension
+        run: uv run maturin develop --manifest-path rust/bess_engine/Cargo.toml
+
+      # With the extension present, the scaffold's engine_info() test runs
+      # for real instead of skipping (specs/M4a_rust_scaffold.md criterion 4).
+      - name: Test (pytest, with bess_engine built)
+        run: uv run pytest

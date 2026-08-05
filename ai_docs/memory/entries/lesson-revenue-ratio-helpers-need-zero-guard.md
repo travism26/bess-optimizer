@@ -2,7 +2,7 @@
 name: revenue-ratio-helpers-need-zero-guard
 description: Pure ratio/percentage analytics helpers over LP-derived revenue need explicit zero-denominator guards
 type: lesson
-source_adw_ids: [d39c4d18]
+source_adw_ids: [d39c4d18, 8694b681]
 date: 2026-08-01
 ---
 

@@ -107,6 +107,15 @@ This prompt helps you determine what documentation you should read based on the 
     - When troubleshooting AS price-frame alignment, the pre-launch product mask, or ancillary metrics JSON filename collisions
     - When adding tests to `tests/test_as_backtest_integration.py`
 
+- app_docs/feature-8694b681-rust-scaffold.md
+
+  - Conditions:
+    - When working with `rust/bess_engine/` or `src/bess/optimizer/rust.py`
+    - When touching the `rust` CI job, `rust-fmt`/`rust-clippy`/`rust-test` gates, or the crate's Cargo.toml
+    - When implementing M4b/M4c (the LP core, `optimize_dispatch_rust` wiring, or the `--engine` flag)
+    - When troubleshooting the PyO3 `extension-module` feature, `maturin develop`, or the highs-sys native link
+    - When touching the bess_engine import-confinement guard in `tests/test_rust_scaffold.py`
+
 - adws/README.md
 
   - Conditions:

@@ -2,7 +2,7 @@
 name: metrics-json-unqualified-filename-collision
 description: bess backtest wrote perfect and rolling metrics to the same unqualified filename, overwriting each other
 type: pitfall
-source_adw_ids: [325296bb, 6f498150, 3034ec63, d39c4d18]
+source_adw_ids: [325296bb, 6f498150, 3034ec63, d39c4d18, 8694b681]
 date: 2026-08-01
 ---
 

@@ -24,8 +24,14 @@ dist/
 .coverage
 htmlcov/
 
-# Rust
-rust/target/
+# Rust: matches rust/target/ AND rust/bess_engine/target/ (crate build dirs)
+rust/**/target/
+
+# Compiled extension modules (maturin develop installs one into .venv, but a
+# stray copy can land at the repo root or under src/)
+*.so
+*.pyd
+*.dylib
 
 # Data: never commit market data, but keep small frozen test fixtures tracked
 data/*.parquet

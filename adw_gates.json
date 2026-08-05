@@ -2,6 +2,18 @@
   "gates": [
     { "name": "lint", "command": "uv run ruff check ." },
     { "name": "typecheck", "command": "uv run mypy" },
-    { "name": "unit", "command": "uv run pytest -q" }
+    { "name": "unit", "command": "uv run pytest -q" },
+    {
+      "name": "rust-fmt",
+      "command": "cargo fmt --manifest-path rust/bess_engine/Cargo.toml -- --check"
+    },
+    {
+      "name": "rust-clippy",
+      "command": "cargo clippy --manifest-path rust/bess_engine/Cargo.toml --all-targets -- -D warnings"
+    },
+    {
+      "name": "rust-test",
+      "command": "cargo test --manifest-path rust/bess_engine/Cargo.toml"
+    }
   ]
 }

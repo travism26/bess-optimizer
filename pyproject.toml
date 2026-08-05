@@ -26,6 +26,7 @@ dev = [
     "mypy>=1.11",
     "pre-commit>=3.8",
     "pandas-stubs>=2.2",
+    "maturin>=1.7",
 ]
 
 [build-system]
@@ -57,7 +58,7 @@ warn_return_any = true
 strict_equality = true
 
 [[tool.mypy.overrides]]
-module = ["gridstatus.*", "highspy.*"]
+module = ["gridstatus.*", "highspy.*", "bess_engine"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
